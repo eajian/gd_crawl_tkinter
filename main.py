@@ -130,8 +130,14 @@ class Start(object):
                 self.console.insert('end', '   采集 >' + x['name'] + '< 坐标 ' + x['center'])
                 self.console.yview_moveto(1)  # 更新滚动到底部
                 self.location = x['center']
-                self.get_info_init(self.keys, self.key_word, self.location, x['name'])
-                time.sleep(self.time)
+                # v2 加上判断是否有这个文件 有就跳过
+                if not os.path.exists('data/'+self.key_word + '/' + self.sf + '/' + x['name'] + '_data.xlsx'):
+                # v2
+                    self.get_info_init(self.keys, self.key_word, self.location, x['name'])
+                    time.sleep(self.time)
+                else:
+                    self.console.insert('end', '   数据已经存在,跳过~ ')
+                    self.console.yview_moveto(1)  # 更新滚动到底部
             # test
             # self.location = i['next'][0]['center']
             # self.get_info_init(self.keys, self.key_word, self.location, i['next'][0]['name'])
@@ -157,22 +163,22 @@ class Start(object):
                     self.console.insert('end', '      名字:' + e_name + ' / 电话:' + e['tel'] + '/ 地址:' + e_address)
                     self.console.yview_moveto(1)  # 更新滚动到底部
             # 分页采集
-            for other in range(pages - 1):
-                time.sleep(self.time)
-                new_page = other + 2
-                self.console.insert('end', '      第 ' + str(new_page) + ' 页 ')
-                self.console.yview_moveto(1)  # 更新滚动到底部
-                new_urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(
-                    new_page) + '&radius=50000'
-                new_re = requests.get(new_urls, headers).json()
-                for new_e in new_re['pois']:
-                    if new_e['tel']:
-                        new_address = new_e['address'] if new_e['address'] else '空'
-                        new_name = new_e['name'] if new_e['name'] else '空'
-                        re_list.append({'名字': new_name, '电话': new_e['tel'], '地址': new_address})
-                        self.console.insert('end',
-                                            '      名字:' + new_name + '/ 电话:' + new_e['tel'] + '/ 地址:' + new_address)
-                        self.console.yview_moveto(1)  # 更新滚动到底部
+            # for other in range(pages - 1):
+            #     time.sleep(self.time)
+            #     new_page = other + 2
+            #     self.console.insert('end', '      第 ' + str(new_page) + ' 页 ')
+            #     self.console.yview_moveto(1)  # 更新滚动到底部
+            #     new_urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(
+            #         new_page) + '&radius=50000'
+            #     new_re = requests.get(new_urls, headers).json()
+            #     for new_e in new_re['pois']:
+            #         if new_e['tel']:
+            #             new_address = new_e['address'] if new_e['address'] else '空'
+            #             new_name = new_e['name'] if new_e['name'] else '空'
+            #             re_list.append({'名字': new_name, '电话': new_e['tel'], '地址': new_address})
+            #             self.console.insert('end',
+            #                                 '      名字:' + new_name + '/ 电话:' + new_e['tel'] + '/ 地址:' + new_address)
+            #             self.console.yview_moveto(1)  # 更新滚动到底部
             self.write_info(re_list, city)
         else:
             tkinter.messagebox.showerror(title='信息', message='采集失败，密钥或参数错误！')
@@ -180,12 +186,12 @@ class Start(object):
 
     def write_info(self, re_list, city): # 写入
         if re_list:
-            if not os.path.exists(self.key_word):
-                os.mkdir(self.key_word)
-            if not os.path.exists(self.key_word+'/' + self.sf):
-                os.mkdir(self.key_word+'/' + self.sf)
+            if not os.path.exists('data/'+self.key_word):
+                os.mkdir('data/'+self.key_word)
+            if not os.path.exists('data/'+self.key_word+'/' + self.sf):
+                os.mkdir('data/'+self.key_word+'/' + self.sf)
 
-            workbook = xlsxwriter.Workbook(self.key_word+'/' + self.sf + '/' + city + '_data.xlsx')
+            workbook = xlsxwriter.Workbook('data/'+self.key_word+'/' + self.sf + '/' + city + '_data.xlsx')
             worksheet = workbook.add_worksheet(city)
             for index, val in enumerate(re_list):
                 worksheet.write(index, 0, val['名字'])
