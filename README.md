@@ -1,4 +1,4 @@
-### gd_crawl_tkinter
+### 爬虫 gd_crawl_tkinter
 ```
 # 导出依赖
 pip freeze >requirements.txt 
@@ -9,7 +9,7 @@ pip install -i https://pypi.douban.com/simple django
 ```
 ### 打包exe
 ```
-pyinstaller -F -w -i ico.ico main.py
+pyinstaller -F -w -i assets/ico/ico.ico main.py
 # -F 独立文件打包
 # -w 不现实终端
 # -i 制定icon

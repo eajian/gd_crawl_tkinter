@@ -44,8 +44,8 @@ def _async_raise(tid, exctype):
 class Start(object):
     def __init__(self):
         self.root = tkinter.Tk()
-        self.root.iconbitmap('ico.ico')
-        self.root.title('版本 0.0.1')
+        self.root.iconbitmap('assets/ico/ico.ico')
+        self.root.title('版本 0.0.2')
         # 窗体居中 - S
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
@@ -163,22 +163,22 @@ class Start(object):
                     self.console.insert('end', '      名字:' + e_name + ' / 电话:' + e['tel'] + '/ 地址:' + e_address)
                     self.console.yview_moveto(1)  # 更新滚动到底部
             # 分页采集
-            # for other in range(pages - 1):
-            #     time.sleep(self.time)
-            #     new_page = other + 2
-            #     self.console.insert('end', '      第 ' + str(new_page) + ' 页 ')
-            #     self.console.yview_moveto(1)  # 更新滚动到底部
-            #     new_urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(
-            #         new_page) + '&radius=50000'
-            #     new_re = requests.get(new_urls, headers).json()
-            #     for new_e in new_re['pois']:
-            #         if new_e['tel']:
-            #             new_address = new_e['address'] if new_e['address'] else '空'
-            #             new_name = new_e['name'] if new_e['name'] else '空'
-            #             re_list.append({'名字': new_name, '电话': new_e['tel'], '地址': new_address})
-            #             self.console.insert('end',
-            #                                 '      名字:' + new_name + '/ 电话:' + new_e['tel'] + '/ 地址:' + new_address)
-            #             self.console.yview_moveto(1)  # 更新滚动到底部
+            for other in range(pages - 1):
+                time.sleep(self.time)
+                new_page = other + 2
+                self.console.insert('end', '      第 ' + str(new_page) + ' 页 ')
+                self.console.yview_moveto(1)  # 更新滚动到底部
+                new_urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(
+                    new_page) + '&radius=50000'
+                new_re = requests.get(new_urls, headers).json()
+                for new_e in new_re['pois']:
+                    if new_e['tel']:
+                        new_address = new_e['address'] if new_e['address'] else '空'
+                        new_name = new_e['name'] if new_e['name'] else '空'
+                        re_list.append({'名字': new_name, '电话': new_e['tel'], '地址': new_address})
+                        self.console.insert('end',
+                                            '      名字:' + new_name + '/ 电话:' + new_e['tel'] + '/ 地址:' + new_address)
+                        self.console.yview_moveto(1)  # 更新滚动到底部
             self.write_info(re_list, city)
         else:
             tkinter.messagebox.showerror(title='信息', message='采集失败，密钥或参数错误！')
