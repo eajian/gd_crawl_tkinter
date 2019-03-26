@@ -9,6 +9,7 @@ import ctypes
 
 import os
 import xlsxwriter
+import re
 
 from utils.city import get_city
 
@@ -45,7 +46,7 @@ class Start(object):
     def __init__(self):
         self.root = tkinter.Tk()
         self.root.iconbitmap('assets/ico/ico.ico')
-        self.root.title('版本 0.0.2')
+        self.root.title('版本 0.0.3')
         # 窗体居中 - S
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
@@ -76,9 +77,21 @@ class Start(object):
         self.location = ''
         self.sf = ''
         self.sheet = '初始化'
-        self.time = 3
+        self.time = 5
         self.thread1 = threading.Thread(target=self.init_get) # 做为变量
-        #
+        # v3
+        self.m_box = tkinter.Frame(self.root, width=200, height=22, )
+        self.check_label = tkinter.Label(self.m_box, text='数据类型: ')
+        self.check_v1 = tkinter.IntVar()
+        self.check_v2 = tkinter.IntVar()
+        self.check_v1.set(1) # 设置个默认值
+        self.check_btn1 = tkinter.Checkbutton(self.m_box, text='手机', variable=self.check_v1)
+        self.check_btn2 = tkinter.Checkbutton(self.m_box, text='固话', variable=self.check_v2)
+        self.check1 = 1
+        self.check2 = 1
+        # v3
+
+
 
     def stop_crawl(self):
         _async_raise(self.thread1.ident, SystemExit)
@@ -99,13 +112,24 @@ class Start(object):
         #
         self.todo_btn.place(x=280, y=40)
         #
-        self.input_time.insert(0, 3)
+        self.input_time.insert(0, self.time)
         self.input_key_word.insert(0, '请输入关键词...')
+        # v3
+        self.m_box.place(x=380, y=10)
+        self.check_label.pack(side='left')
+        self.check_btn1.pack(side='left')
+        self.check_btn2.pack(side='left')
+        # v3
+
 
     def todo_crawl(self):
         self.keys = self.input_keys.get()
         self.key_word = self.input_key_word.get()
         self.time = int(self.input_time.get())
+        self.check1 = self.check_v1.get()
+        self.check2 = self.check_v2.get()
+        if self.check1 == 0 and self.check2 == 0:
+            return tkinter.messagebox.showinfo(title='信息', message='请最少选择个输出数据类型')
         if not self.keys:
             return tkinter.messagebox.showinfo(title='信息', message='请填写正确的密钥')
         if not self.key_word:
@@ -147,45 +171,124 @@ class Start(object):
         time.sleep(self.time)
         page = 1
         urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(page) + '&radius=50000'
-        re_list = []
-        re = requests.get(urls, headers).json()
+        res_list = []
+        res = requests.get(urls, headers).json()
         # 先判断一次回调
-        if re['status'] == '1':
-            pages = math.ceil(int(re['count']) / 25)
+        if res['status'] == '1':
+            pages = math.ceil(int(res['count']) / 25)
             self.console.insert('end', '      需采集共 ' + str(pages) + ' 页 ')
             self.console.insert('end', '      第 1 页 ')
             self.console.yview_moveto(1)  # 更新滚动到底部
-            for e in re['pois']:
+            for e in res['pois']:
                 if e['tel']:
-                    e_address = e['address'] if e['address'] else '空'
-                    e_name = e['name'] if e['name'] else '空'
-                    re_list.append({'名字': e_name, '电话': e['tel'], '地址': e_address})
-                    self.console.insert('end', '      名字:' + e_name + ' / 电话:' + e['tel'] + '/ 地址:' + e_address)
-                    self.console.yview_moveto(1)  # 更新滚动到底部
+                    phone = []
+                    call = []
+                    telephone = e['tel'].split(';')
+                    # 全选
+                    if self.check1 == 1 and self.check2 == 1:
+                        for p, pval in enumerate(telephone):
+                            ret = re.match(r"^1[23456789]\d{9}$", pval)
+                            if ret:
+                                phone.append(pval)
+                            else:
+                                call.append(pval)
+                        #
+                        if len(phone) != 0 or len(call) != 0:
+                            e_address = e['address'] if e['address'] else '空'
+                            e_name = e['name'] if e['name'] else '空'
+                            res_list.append({'名字': e_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': e_address})
+                            self.console.insert('end', '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
+                            self.console.yview_moveto(1)  # 更新滚动到底部
+                    # 全选
+                    # 只选手机
+                    elif self.check1 == 1:
+                        for p, pval in enumerate(telephone):
+                            ret = re.match(r"^1[23456789]\d{9}$", pval)
+                            if ret:
+                                phone.append(pval)
+                        if len(phone) != 0:
+                            e_address = e['address'] if e['address'] else '空'
+                            e_name = e['name'] if e['name'] else '空'
+                            res_list.append({'名字': e_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': e_address})
+                            self.console.insert('end', '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
+                            self.console.yview_moveto(1)  # 更新滚动到底部
+                    # 只选手机
+                    # 只选固话
+                    elif self.check2 == 1:
+                        for p, pval in enumerate(telephone):
+                            ret = re.match(r"^1[23456789]\d{9}$", pval)
+                            if not ret:
+                                call.append(pval)
+                        if len(call) != 0:
+                            e_address = e['address'] if e['address'] else '空'
+                            e_name = e['name'] if e['name'] else '空'
+                            res_list.append({'名字': e_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': e_address})
+                            self.console.insert('end', '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
+                            self.console.yview_moveto(1)  # 更新滚动到底部
+                    # 只选固话
+
             # 分页采集
             for other in range(pages - 1):
                 time.sleep(self.time)
                 new_page = other + 2
                 self.console.insert('end', '      第 ' + str(new_page) + ' 页 ')
                 self.console.yview_moveto(1)  # 更新滚动到底部
-                new_urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(
-                    new_page) + '&radius=50000'
-                new_re = requests.get(new_urls, headers).json()
-                for new_e in new_re['pois']:
+                new_urls = 'http://restapi.amap.com/v3/place/around?key=' + keys + '&location=' + location + '&keywords=' + key_word + '&offset=25&page=' + str(new_page) + '&radius=50000'
+                new_res = requests.get(new_urls, headers).json()
+                for new_e in new_res['pois']:
                     if new_e['tel']:
-                        new_address = new_e['address'] if new_e['address'] else '空'
-                        new_name = new_e['name'] if new_e['name'] else '空'
-                        re_list.append({'名字': new_name, '电话': new_e['tel'], '地址': new_address})
-                        self.console.insert('end',
-                                            '      名字:' + new_name + '/ 电话:' + new_e['tel'] + '/ 地址:' + new_address)
-                        self.console.yview_moveto(1)  # 更新滚动到底部
-            self.write_info(re_list, city)
+                        phone = []
+                        call = []
+                        telephone = new_e['tel'].split(';')
+                        # 全选
+                        if self.check1 == 1 and self.check2 == 1:
+                            for p, pval in enumerate(telephone):
+                                ret = re.match(r"^1[23456789]\d{9}$", pval)
+                                if ret:
+                                    phone.append(pval)
+                                else:
+                                    call.append(pval)
+                            #
+                            if len(phone) != 0 or len(call) != 0:
+                                new_address = new_e['address'] if new_e['address'] else '空'
+                                new_name = new_e['name'] if new_e['name'] else '空'
+                                res_list.append({'名字': new_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': new_address})
+                                self.console.insert('end', '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
+                                self.console.yview_moveto(1)  # 更新滚动到底部
+                        # 全选
+                        # 只选手机
+                        elif self.check1 == 1:
+                            for p, pval in enumerate(telephone):
+                                ret = re.match(r"^1[23456789]\d{9}$", pval)
+                                if ret:
+                                    phone.append(pval)
+                            if len(phone) != 0:
+                                new_address = new_e['address'] if new_e['address'] else '空'
+                                new_name = new_e['name'] if new_e['name'] else '空'
+                                res_list.append({'名字': new_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': new_address})
+                                self.console.insert('end', '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
+                                self.console.yview_moveto(1)  # 更新滚动到底部
+                        # 只选手机
+                        # 只选固话
+                        elif self.check2 == 1:
+                            for p, pval in enumerate(telephone):
+                                ret = re.match(r"^1[23456789]\d{9}$", pval)
+                                if not ret:
+                                    call.append(pval)
+                            if len(call) != 0:
+                                new_address = new_e['address'] if new_e['address'] else '空'
+                                new_name = new_e['name'] if new_e['name'] else '空'
+                                res_list.append({'名字': new_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': new_address})
+                                self.console.insert('end', '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
+                                self.console.yview_moveto(1)  # 更新滚动到底部
+                        # 只选固话
+            self.write_info(res_list, city)
         else:
             tkinter.messagebox.showerror(title='信息', message='采集失败，密钥或参数错误！')
             self.root.destroy()
 
-    def write_info(self, re_list, city): # 写入
-        if re_list:
+    def write_info(self, res_list, city): # 写入
+        if res_list:
             if not os.path.exists('data/'+self.key_word):
                 os.mkdir('data/'+self.key_word)
             if not os.path.exists('data/'+self.key_word+'/' + self.sf):
@@ -193,10 +296,11 @@ class Start(object):
 
             workbook = xlsxwriter.Workbook('data/'+self.key_word+'/' + self.sf + '/' + city + '_data.xlsx')
             worksheet = workbook.add_worksheet(city)
-            for index, val in enumerate(re_list):
+            for index, val in enumerate(res_list):
                 worksheet.write(index, 0, val['名字'])
-                worksheet.write(index, 1, val['电话'])
-                worksheet.write(index, 2, val['地址'])
+                worksheet.write(index, 1, val['手机'])
+                worksheet.write(index, 2, val['固话'])
+                worksheet.write(index, 3, val['地址'])
             workbook.close()
 
 
