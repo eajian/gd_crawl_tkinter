@@ -11,7 +11,11 @@ import os
 import xlsxwriter
 import re
 
+
+
 from utils.city import get_city
+from utils.common import console_p
+
 
 headers = {
     'Host':'restapi.amap.com',
@@ -93,13 +97,14 @@ class Start(object):
 
 
 
+
     def stop_crawl(self):
         _async_raise(self.thread1.ident, SystemExit)
         # 转换按钮
         self.todo_btn['text'] = '开始采集'
         self.todo_btn['command'] = self.todo_crawl
-        self.console.insert('end', '\n采集结束')
-        self.console.yview_moveto(1)  # 更新滚动到底部
+        console_p(self, '\n采集结束')
+
 
     def gui_show(self):
         self.keys_label.place(x=10, y=10)
@@ -139,8 +144,7 @@ class Start(object):
         # 转换按钮
         self.todo_btn['text'] = '停止'
         self.todo_btn['command'] = self.stop_crawl
-        self.console.insert('end', '正在采集...')
-        self.console.yview_moveto(1)  # 更新滚动到底部
+        console_p(self, '正在采集...')
         # 开启多线程 - 修改变量
         self.thread1 = threading.Thread(target=self.init_get)
         self.thread1.start()
@@ -151,12 +155,10 @@ class Start(object):
             self.console.insert('end', '正在采集[' + i['name'] + '] 共' + str(len(i['next'])) + '个城市')
             self.console.yview_moveto(1)  # 更新滚动到底部
             for x in i['next']:
-                self.console.insert('end', '   采集 >' + x['name'] + '< 坐标 ' + x['center'])
-                self.console.yview_moveto(1)  # 更新滚动到底部
+                console_p(self, '   采集 >' + x['name'] + '< 坐标 ' + x['center'])
                 self.location = x['center']
                 # v2 加上判断是否有这个文件 有就跳过
                 if not os.path.exists('data/'+self.key_word + '/' + self.sf + '/' + x['name'] + '_data.xlsx'):
-                # v2
                     self.get_info_init(self.keys, self.key_word, self.location, x['name'])
                     time.sleep(self.time)
                 else:
@@ -176,9 +178,8 @@ class Start(object):
         # 先判断一次回调
         if res['status'] == '1':
             pages = math.ceil(int(res['count']) / 25)
-            self.console.insert('end', '      需采集共 ' + str(pages) + ' 页 ')
-            self.console.insert('end', '      第 1 页 ')
-            self.console.yview_moveto(1)  # 更新滚动到底部
+            console_p(self, '      需采集共 ' + str(pages) + ' 页 ')
+            console_p(self,  '      第 1 页 ')
             for e in res['pois']:
                 if e['tel']:
                     phone = []
@@ -197,8 +198,7 @@ class Start(object):
                             e_address = e['address'] if e['address'] else '空'
                             e_name = e['name'] if e['name'] else '空'
                             res_list.append({'名字': e_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': e_address})
-                            self.console.insert('end', '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
-                            self.console.yview_moveto(1)  # 更新滚动到底部
+                            console_p(self, '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
                     # 全选
                     # 只选手机
                     elif self.check1 == 1:
@@ -210,8 +210,7 @@ class Start(object):
                             e_address = e['address'] if e['address'] else '空'
                             e_name = e['name'] if e['name'] else '空'
                             res_list.append({'名字': e_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': e_address})
-                            self.console.insert('end', '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
-                            self.console.yview_moveto(1)  # 更新滚动到底部
+                            console_p(self, '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
                     # 只选手机
                     # 只选固话
                     elif self.check2 == 1:
@@ -223,8 +222,7 @@ class Start(object):
                             e_address = e['address'] if e['address'] else '空'
                             e_name = e['name'] if e['name'] else '空'
                             res_list.append({'名字': e_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': e_address})
-                            self.console.insert('end', '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
-                            self.console.yview_moveto(1)  # 更新滚动到底部
+                            console_p(self, '      名字:' + e_name + ' / 手机:' + (";".join(phone)) + ' / 固话:' + (";".join(call)) + '/ 地址:' + e_address)
                     # 只选固话
 
             # 分页采集
@@ -253,8 +251,7 @@ class Start(object):
                                 new_address = new_e['address'] if new_e['address'] else '空'
                                 new_name = new_e['name'] if new_e['name'] else '空'
                                 res_list.append({'名字': new_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': new_address})
-                                self.console.insert('end', '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
-                                self.console.yview_moveto(1)  # 更新滚动到底部
+                                console_p(self, '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
                         # 全选
                         # 只选手机
                         elif self.check1 == 1:
@@ -266,8 +263,7 @@ class Start(object):
                                 new_address = new_e['address'] if new_e['address'] else '空'
                                 new_name = new_e['name'] if new_e['name'] else '空'
                                 res_list.append({'名字': new_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': new_address})
-                                self.console.insert('end', '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
-                                self.console.yview_moveto(1)  # 更新滚动到底部
+                                console_p(self, '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
                         # 只选手机
                         # 只选固话
                         elif self.check2 == 1:
@@ -279,8 +275,7 @@ class Start(object):
                                 new_address = new_e['address'] if new_e['address'] else '空'
                                 new_name = new_e['name'] if new_e['name'] else '空'
                                 res_list.append({'名字': new_name, '手机': (";".join(phone)), '固话': (";".join(call)), '地址': new_address})
-                                self.console.insert('end', '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
-                                self.console.yview_moveto(1)  # 更新滚动到底部
+                                console_p(self, '      名字:' + new_name + ' / 手机:' + (";".join(phone)) + '/ 固话:' + (";".join(call)) + '/ 地址:' + new_address)
                         # 只选固话
             self.write_info(res_list, city)
         else:
